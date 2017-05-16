@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors')({origin: true});
 const middleware = require('./middleware')(admin);
 
+const oauth = require('./oauth');
 const slots = require('./slots')(admin);
 const User = require("./user");
 
@@ -35,3 +36,16 @@ exports.updateProfile = functions.database.ref("/accounts/{userId}/githubToken")
       return user.updateProfile();
     });
   });
+
+exports.githubToken = functions.https.onRequest((req, res) => {
+  const config = functions.config().github;
+  const github = new oauth.GitHub(config.client_id, config.client_secret);
+  return github.getToken(req.body.code)
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(500);
+    });
+});
